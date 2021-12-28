@@ -2,6 +2,7 @@ const createError = require("http-errors");
 const express = require("express");
 const router = express.Router();
 const { Contact, joiSchema } = require("../../models/contacts");
+const updateStatusContact = require("../../handlers/updateStatusContact");
 
 router.get("/", async (req, res, next) => {
   try {
@@ -83,6 +84,29 @@ router.patch("/:contactId", async (req, res, next) => {
       return next();
     }
     res.json(updatedContact);
+  } catch (error) {
+    if (error.message.includes("Cast to ObjectId failed")) {
+      error.status = 404;
+    }
+    next(error);
+  }
+});
+
+router.patch("/:contactId/favorite", async (req, res, next) => {
+  const contactBody = req.body.favorite;
+  const { contactId } = req.params;
+
+  if (!contactBody) {
+    next(createError(400, "missing field favorite"));
+  }
+
+  try {
+    const result = await updateStatusContact(contactId, contactBody);
+    if (!result) {
+      return next();
+    }
+
+    res.json(result);
   } catch (error) {
     if (error.message.includes("Cast to ObjectId failed")) {
       error.status = 404;
