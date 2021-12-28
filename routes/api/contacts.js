@@ -1,19 +1,11 @@
-const { v4 } = require("uuid");
-const Joi = require("joi");
 const createError = require("http-errors");
 const express = require("express");
 const router = express.Router();
-const contactsOperations = require("../../model/contacts");
-
-const joiSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().email().required(),
-  phone: Joi.required(),
-});
+const { Contact, joiSchema } = require("../../models/contacts");
 
 router.get("/", async (req, res, next) => {
   try {
-    const contacts = await contactsOperations.listContacts();
+    const contacts = await Contact.find();
     res.json(contacts);
   } catch (error) {
     next(error);
@@ -24,13 +16,16 @@ router.get("/:contactId", async (req, res, next) => {
   const { contactId } = req.params;
 
   try {
-    const contact = await contactsOperations.getContactById(contactId);
+    const contact = await Contact.findById(contactId);
 
     if (!contact) {
       next();
     }
     res.json(contact);
   } catch (error) {
+    if (error.message.includes("Cast to ObjectId failed")) {
+      error.status = 404;
+    }
     next(error);
   }
 });
@@ -43,12 +38,12 @@ router.post("/", async (req, res, next) => {
   }
 
   try {
-    const newContact = await contactsOperations.addContact({
-      id: v4(),
-      ...req.body,
-    });
+    const newContact = await Contact.create(req.body);
     res.status(201).json(newContact);
   } catch (error) {
+    if (error.message.includes("validation failed")) {
+      error.status = 400;
+    }
     next(error);
   }
 });
@@ -56,12 +51,15 @@ router.post("/", async (req, res, next) => {
 router.delete("/:contactId", async (req, res, next) => {
   const { contactId } = req.params;
   try {
-    const removedContact = await contactsOperations.removeContact(contactId);
+    const removedContact = await Contact.findByIdAndRemove(contactId);
     if (!removedContact) {
       return next();
     }
     res.json(`${removedContact?.name}'s contact is deleted`);
   } catch (error) {
+    if (error.message.includes("Cast to ObjectId failed")) {
+      error.status = 404;
+    }
     next(error);
   }
 });
@@ -76,7 +74,7 @@ router.patch("/:contactId", async (req, res, next) => {
   }
 
   try {
-    const updatedContact = await contactsOperations.updateContact(
+    const updatedContact = await Contact.findByIdAndUpdate(
       contactId,
       contactBody
     );
@@ -86,6 +84,9 @@ router.patch("/:contactId", async (req, res, next) => {
     }
     res.json(updatedContact);
   } catch (error) {
+    if (error.message.includes("Cast to ObjectId failed")) {
+      error.status = 404;
+    }
     next(error);
   }
 });
