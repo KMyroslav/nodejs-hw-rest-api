@@ -95,6 +95,11 @@ router.patch("/:contactId", async (req, res, next) => {
 router.patch("/:contactId/favorite", async (req, res, next) => {
   const contactBody = req.body.favorite;
   const { contactId } = req.params;
+  const { error } = joiSchema.validate(req.body);
+
+  if (error) {
+    return next(createError(400, error));
+  }
 
   if (!contactBody) {
     next(createError(400, "missing field favorite"));
