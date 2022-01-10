@@ -7,9 +7,14 @@ const updateStatusContact = require("../../handlers/updateStatusContact");
 
 router.get("/", authenticate, async (req, res, next) => {
   const { _id } = req.user;
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (page - 1) * limit;
 
   try {
-    const contacts = await Contact.find({ owner: _id });
+    const contacts = await Contact.find({ owner: _id }, "-__v", {
+      skip,
+      limit: +limit,
+    });
     res.json(contacts);
   } catch (error) {
     next(error);
