@@ -3,8 +3,13 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
-const { User, joiSignupSchema } = require("../../models/users");
+const {
+  User,
+  joiSignupSchema,
+  joiSubscriptionSchema,
+} = require("../../models/users");
 const authenticate = require("../../middlewares/authenticate");
+const updateUserSubscription = require("../../handlers/updateUserSubscription");
 
 const { SECRET_KEY } = process.env;
 
@@ -93,6 +98,21 @@ router.get("/current", authenticate, async (req, res, next) => {
   const { _id } = req.user;
   try {
     const user = await User.findById(_id, ["email", "subscription"]);
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/", authenticate, async (req, res, next) => {
+  const { error } = joiSubscriptionSchema.validate(req.body);
+  if (error) {
+    return next(createError(400, error));
+  }
+
+  try {
+    const { _id } = req.user;
+    const user = await updateUserSubscription(_id, req.body);
     res.json(user);
   } catch (error) {
     next(error);
