@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const { User, joiSignupSchema } = require("../../models/users");
+const authenticate = require("../../middlewares/authenticate");
 
 const { SECRET_KEY } = process.env;
 
@@ -72,6 +73,17 @@ router.post("/login", async (req, res, next) => {
         subscription: "starter",
       },
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/logout", authenticate, async (req, res, next) => {
+  const { _id } = req.user;
+
+  try {
+    await User.findOneAndUpdate(_id, { token: null });
+    res.status(204).send();
   } catch (error) {
     next(error);
   }
