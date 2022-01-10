@@ -1,3 +1,3 @@
-const { User } = require("./users");
+const { User, joiSignupSchema } = require("./users");
 
-module.exports = { User };
+module.exports = { User, joiSignupSchema };
