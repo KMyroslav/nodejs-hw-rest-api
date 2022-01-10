@@ -19,7 +19,7 @@ router.get("/", authenticate, async (req, res, next) => {
       const favoriteContacts = contacts.filter(
         (contact) => `${contact.favorite}` === favorite
       );
-      res.json(favoriteContacts);
+      return res.json(favoriteContacts);
     }
     res.json(contacts);
   } catch (error) {
