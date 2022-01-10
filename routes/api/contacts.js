@@ -7,7 +7,7 @@ const updateStatusContact = require("../../handlers/updateStatusContact");
 
 router.get("/", authenticate, async (req, res, next) => {
   const { _id } = req.user;
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, favorite = false } = req.query;
   const skip = (page - 1) * limit;
 
   try {
@@ -15,6 +15,12 @@ router.get("/", authenticate, async (req, res, next) => {
       skip,
       limit: +limit,
     });
+    if (favorite) {
+      const favoriteContacts = contacts.filter(
+        (contact) => `${contact.favorite}` === favorite
+      );
+      res.json(favoriteContacts);
+    }
     res.json(contacts);
   } catch (error) {
     next(error);
