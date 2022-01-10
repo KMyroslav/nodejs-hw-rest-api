@@ -89,4 +89,14 @@ router.get("/logout", authenticate, async (req, res, next) => {
   }
 });
 
+router.get("/current", authenticate, async (req, res, next) => {
+  const { _id } = req.user;
+  try {
+    const user = await User.findById(_id, ["email", "subscription"]);
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
