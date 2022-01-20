@@ -10,6 +10,7 @@ const {
 } = require("../../models/users");
 const authenticate = require("../../middlewares/authenticate");
 const updateUserSubscription = require("../../handlers/updateUserSubscription");
+const gravatar = require("gravatar/lib/gravatar");
 
 const { SECRET_KEY } = process.env;
 
@@ -29,9 +30,11 @@ router.post("/signup", async (req, res, next) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
+    const avatarURL = gravatar.url(email);
     const newUser = await User.create({
       email,
       password: hashPassword,
+      avatarURL,
     });
     res.status(201).json({
       user: {
