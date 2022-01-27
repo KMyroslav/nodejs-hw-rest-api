@@ -198,4 +198,25 @@ router.post("/verify", async (req, res, next) => {
     next(error);
   }
 });
+
+router.get("/verify/:verificationToken", async (req, res, next) => {
+  const { verificationToken } = req.params;
+  try {
+    const user = await User.findOne({ verificationToken });
+    if (!user) {
+      next(createError(404, "User not found"));
+    }
+    await User.findOneAndUpdate(
+      { verificationToken },
+      {
+        verificationToken: null,
+        verify: true,
+      }
+    );
+    res.json("Verification successful");
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;
