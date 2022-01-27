@@ -169,4 +169,33 @@ router.patch(
   }
 );
 
+router.post("/verify", async (req, res, next) => {
+  const { email } = req.body;
+
+  if (!email) {
+    next(createError(400, "missing required field email"));
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      next(createError(404, "User not found"));
+    }
+    if (user.verify) {
+      next(createError(400, "Verification has already been passed"));
+    }
+
+    const data = {
+      to: email,
+      subject: "Verify your email address",
+      html: `<a target="_blank" href="${WEBSITE_ADDRESS}/api/users/verify/${user.verificationToken}>Please press here to verify your email address.</a>`,
+      text: `Or verify your email by following the link ${WEBSITE_ADDRESS}/users/verify/${user.verificationToken}`,
+    };
+    await sendEmail(data);
+
+    res.json("Verification email sent");
+  } catch (error) {
+    next(error);
+  }
+});
 module.exports = router;
