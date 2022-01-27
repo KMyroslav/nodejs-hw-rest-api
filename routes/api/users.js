@@ -2,11 +2,12 @@ const createError = require("http-errors");
 const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const router = express.Router();
+const { v4 } = require("uuid");
 const fs = require("fs/promises");
 const path = require("path");
 const gravatar = require("gravatar/lib/gravatar");
 const Jimp = require("jimp");
+const router = express.Router();
 const {
   User,
   joiSignupSchema,
@@ -14,8 +15,9 @@ const {
 } = require("../../models/users");
 const { authenticate, upload } = require("../../middlewares");
 const updateUserSubscription = require("../../handlers/updateUserSubscription");
+const { sendEmail } = require("../../utils");
 
-const { SECRET_KEY } = process.env;
+const { SECRET_KEY, WEBSITE_ADDRESS } = process.env;
 
 const avatarsDir = path.join(__dirname, "../../", "public/avatars");
 
@@ -35,12 +37,23 @@ router.post("/signup", async (req, res, next) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
+    const verificationToken = v4();
     const avatarURL = gravatar.url(email);
     const newUser = await User.create({
       email,
+      verificationToken,
       password: hashPassword,
       avatarURL,
     });
+
+    const data = {
+      to: email,
+      subject: "Verify your email address",
+      html: `<a target="_blank" href="${WEBSITE_ADDRESS}/api/users/verify/${verificationToken}>Please press here to verify your email address.</a>`,
+      text: `Or verify your email by following the link ${WEBSITE_ADDRESS}/users/verify/${verificationToken}`,
+    };
+    await sendEmail(data);
+
     res.status(201).json({
       user: {
         email: newUser.email,
@@ -70,6 +83,10 @@ router.post("/login", async (req, res, next) => {
     const passwordCompare = await bcrypt.compare(password, user.password);
     if (!passwordCompare) {
       return next(createError(401, "Email or password is wrong"));
+    }
+
+    if (!user.verify) {
+      return next(createError(403, "Email is not verified"));
     }
 
     const { _id } = user;
